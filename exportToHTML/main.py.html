@@ -1,0 +1,423 @@
+<html>
+<head>
+<title>main.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #067d17;}
+.s4 { color: #0037a6;}
+.s5 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+main.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">pandas </span><span class="s0">as </span><span class="s1">pd</span>
+<span class="s0">import </span><span class="s1">matplotlib.pyplot </span><span class="s0">as </span><span class="s1">plt</span>
+<span class="s0">import </span><span class="s1">seaborn </span><span class="s0">as </span><span class="s1">sns</span>
+<span class="s0">import </span><span class="s1">numpy </span><span class="s0">as </span><span class="s1">np</span>
+<span class="s0">from </span><span class="s1">sklearn.model_selection </span><span class="s0">import </span><span class="s1">train_test_split, cross_val_score, KFold</span>
+<span class="s0">from </span><span class="s1">sklearn.preprocessing </span><span class="s0">import </span><span class="s1">StandardScaler</span>
+<span class="s0">from </span><span class="s1">sklearn.base </span><span class="s0">import </span><span class="s1">BaseEstimator, ClassifierMixin</span>
+<span class="s0">from </span><span class="s1">functions </span><span class="s0">import </span><span class="s1">*</span>
+
+<span class="s2"># File uploading</span>
+<span class="s1">file_path = </span><span class="s3">'/Users/lorispalmarin/PycharmProjects/MachLear/data.csv'</span>
+<span class="s1">df = pd.read_csv(file_path)</span>
+
+<span class="s2">##### EDA</span>
+
+<span class="s1">print(</span><span class="s3">&quot;First rows of the dataset:</span><span class="s4">\n</span><span class="s3">&quot;</span><span class="s1">, df.head())</span>
+<span class="s1">print(</span><span class="s3">&quot;</span><span class="s4">\n</span><span class="s3">Statistical summary:</span><span class="s4">\n</span><span class="s3">&quot;</span><span class="s1">, df.describe())</span>
+
+<span class="s2"># Removing NAs, if any</span>
+<span class="s1">df = df.dropna()</span>
+
+<span class="s1">num_columns = df.drop(</span><span class="s3">'y'</span><span class="s1">, axis=</span><span class="s5">1</span><span class="s1">).columns  </span><span class="s2"># Removing target var Y</span>
+
+<span class="s2"># Boxplot of xN variables</span>
+<span class="s1">plt.figure(figsize=(</span><span class="s5">20</span><span class="s1">, </span><span class="s5">15</span><span class="s1">))</span>
+<span class="s0">for </span><span class="s1">i, column </span><span class="s0">in </span><span class="s1">enumerate(num_columns, </span><span class="s5">1</span><span class="s1">):</span>
+    <span class="s1">plt.subplot(</span><span class="s5">4</span><span class="s1">, </span><span class="s5">3</span><span class="s1">, i)</span>
+    <span class="s1">sns.histplot(df[column], kde=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">plt.title(</span><span class="s3">f'Distribution of </span><span class="s4">{</span><span class="s1">column</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+<span class="s1">plt.tight_layout()</span>
+<span class="s1">plt.show()</span>
+
+<span class="s2"># Boxplot to find outliers</span>
+<span class="s1">plt.figure(figsize=(</span><span class="s5">20</span><span class="s1">, </span><span class="s5">15</span><span class="s1">))</span>
+<span class="s0">for </span><span class="s1">i, column </span><span class="s0">in </span><span class="s1">enumerate(num_columns, </span><span class="s5">1</span><span class="s1">):</span>
+    <span class="s1">plt.subplot(</span><span class="s5">4</span><span class="s1">, </span><span class="s5">3</span><span class="s1">, i)</span>
+    <span class="s1">sns.boxplot(x=df[column])</span>
+    <span class="s1">plt.title(</span><span class="s3">f'Boxplot of </span><span class="s4">{</span><span class="s1">column</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+<span class="s1">plt.tight_layout()</span>
+<span class="s1">plt.show()</span>
+
+
+<span class="s2">### Outliers handling - IQR method</span>
+<span class="s0">for </span><span class="s1">column </span><span class="s0">in </span><span class="s1">[</span><span class="s3">'x2'</span><span class="s1">, </span><span class="s3">'x7'</span><span class="s1">, </span><span class="s3">'x8'</span><span class="s1">, </span><span class="s3">'x9'</span><span class="s1">]: </span><span class="s2"># Cycle for each column when removing outliers</span>
+    <span class="s1">df = remove_outliers(df, column)</span>
+
+<span class="s2"># Getting final dimension of dataset</span>
+<span class="s1">print(</span><span class="s3">f'Final dataset shape: </span><span class="s4">{</span><span class="s1">df.shape</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+
+
+<span class="s2">### Check of correlation</span>
+<span class="s1">correlation_matrix = df.iloc[:, :</span><span class="s5">10</span><span class="s1">].corr()</span>
+
+<span class="s2"># Matrix</span>
+<span class="s1">plt.figure(figsize=(</span><span class="s5">10</span><span class="s1">, </span><span class="s5">8</span><span class="s1">))</span>
+<span class="s1">sns.heatmap(correlation_matrix, annot=</span><span class="s0">True</span><span class="s1">, cmap=</span><span class="s3">'coolwarm'</span><span class="s1">, fmt=</span><span class="s3">&quot;.2f&quot;</span><span class="s1">)</span>
+<span class="s1">plt.title(</span><span class="s3">'Correlation Matrix pre-processing'</span><span class="s1">)</span>
+<span class="s1">plt.show()</span>
+
+<span class="s2"># Removing x6 and x10 because higly correlated</span>
+<span class="s1">df = df.drop([</span><span class="s3">'x6'</span><span class="s1">, </span><span class="s3">'x10'</span><span class="s1">], axis=</span><span class="s5">1</span><span class="s1">)</span>
+
+<span class="s2"># Double check of correlation</span>
+<span class="s1">correlation_matrix = df.iloc[:, :</span><span class="s5">8</span><span class="s1">].corr()</span>
+<span class="s1">plt.figure(figsize=(</span><span class="s5">10</span><span class="s1">, </span><span class="s5">8</span><span class="s1">))</span>
+<span class="s1">sns.heatmap(correlation_matrix, annot=</span><span class="s0">True</span><span class="s1">, cmap=</span><span class="s3">'coolwarm'</span><span class="s1">, fmt=</span><span class="s3">&quot;.2f&quot;</span><span class="s1">)</span>
+<span class="s1">plt.title(</span><span class="s3">'Correlation Matrix post-processing'</span><span class="s1">)</span>
+<span class="s1">plt.show()</span>
+
+
+<span class="s2">### Splitting in train and test set</span>
+<span class="s1">X = df.drop(</span><span class="s3">'y'</span><span class="s1">, axis=</span><span class="s5">1</span><span class="s1">).values</span>
+<span class="s1">y = df[</span><span class="s3">'y'</span><span class="s1">].values</span>
+<span class="s1">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=</span><span class="s5">0.2</span><span class="s1">, random_state=</span><span class="s5">42</span><span class="s1">)</span>
+
+
+<span class="s2">### Feature scaling</span>
+<span class="s1">scaler = StandardScaler()</span>
+<span class="s2"># Fit on training set, then transformation of both traind and test set IMPORTANTE PER DATA LEAKAGE</span>
+<span class="s1">X_train = scaler.fit_transform(X_train)</span>
+<span class="s1">X_test = scaler.transform(X_test)</span>
+
+<span class="s2"># Last check</span>
+<span class="s1">print(</span><span class="s3">&quot;</span><span class="s4">\n</span><span class="s3">Statistical summary of training set after standardisation:</span><span class="s4">\n</span><span class="s3">&quot;</span><span class="s1">, pd.DataFrame(X_train).describe())</span>
+
+<span class="s2">#set seed for replicability of SVM and LogReg</span>
+<span class="s1">np.random.seed(</span><span class="s5">42</span><span class="s1">)</span>
+
+
+
+<span class="s2">######## PERCEPTRON w/CROSS VALIDATION</span>
+
+<span class="s1">print(</span><span class="s3">f&quot;Running Perceptron with 3 different max_epochs: (1000, 2000, 5000), using 5-fold cross-validation.&quot;</span><span class="s1">)</span>
+
+
+<span class="s2">#Initialising models and cross validation</span>
+<span class="s1">perceptron_model = Perceptron(max_epochs=</span><span class="s5">1000</span><span class="s1">)</span>
+<span class="s1">perceptron_model2 = Perceptron(max_epochs=</span><span class="s5">2000</span><span class="s1">)</span>
+<span class="s1">perceptron_model3 = Perceptron(max_epochs=</span><span class="s5">5000</span><span class="s1">)</span>
+
+<span class="s1">kf = KFold(n_splits=</span><span class="s5">5</span><span class="s1">, shuffle=</span><span class="s0">True</span><span class="s1">, random_state=</span><span class="s5">42</span><span class="s1">)</span>
+
+<span class="s2"># Executing cross-validation</span>
+<span class="s1">scores = cross_val_score(perceptron_model, X_train, y_train, cv=kf)</span>
+<span class="s1">scores2 = cross_val_score(perceptron_model2, X_train, y_train, cv=kf)</span>
+<span class="s1">scores3 = cross_val_score(perceptron_model3, X_train, y_train, cv=kf)</span>
+
+<span class="s2"># Results</span>
+<span class="s1">print(</span><span class="s3">&quot;Accuracy scores for each fold (1000 epochs):&quot;</span><span class="s1">, scores)</span>
+<span class="s1">print(</span><span class="s3">&quot;Mean cross-validation accuracy (1000 epochs):&quot;</span><span class="s1">, np.mean(scores))</span>
+<span class="s1">print(</span><span class="s3">&quot;Accuracy scores for each fold (2000 epochs):&quot;</span><span class="s1">, scores2)</span>
+<span class="s1">print(</span><span class="s3">&quot;Mean cross-validation accuracy (2000 epochs):&quot;</span><span class="s1">, np.mean(scores2))</span>
+<span class="s1">print(</span><span class="s3">&quot;Accuracy scores for each fold (5000 epochs):&quot;</span><span class="s1">, scores3)</span>
+<span class="s1">print(</span><span class="s3">&quot;Mean cross-validation accuracy (5000 epochs):&quot;</span><span class="s1">, np.mean(scores3))</span>
+
+<span class="s2"># Choosing best model basing on performances</span>
+<span class="s1">best_model = perceptron_model</span>
+
+<span class="s2"># Training the best model on whole training set</span>
+<span class="s1">best_model.fit(X_train, y_train)</span>
+
+<span class="s2"># Predicting labels on test set</span>
+<span class="s1">y_pred = best_model.predict(X_test)</span>
+
+<span class="s2"># Computing and printing accuracy on test set</span>
+<span class="s1">accuracy = np.mean(y_test == y_pred)</span>
+<span class="s1">loss = np.mean( y_test != y_pred)</span>
+<span class="s1">print(</span><span class="s3">f'Accuracy on test set: </span><span class="s4">{</span><span class="s1">accuracy</span><span class="s4">:</span><span class="s3">.2f</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+<span class="s1">print(</span><span class="s3">f'Misclassification rate on test set: </span><span class="s4">{</span><span class="s1">loss</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+
+
+
+
+
+
+<span class="s2">######## SVM w/PEGASOS UPDATES</span>
+
+<span class="s1">print(</span><span class="s3">f&quot;</span><span class="s4">\n</span><span class="s3">Running Support Vector Machine with different values of parameters </span><span class="s4">\n</span><span class="s3">Using grid search with 5-fold cross validation:&quot;</span><span class="s1">)</span>
+
+
+<span class="s2"># Defining different combinations of parameters</span>
+<span class="s1">param_grid = {</span><span class="s3">'lambda_param'</span><span class="s1">: [</span><span class="s5">0.001</span><span class="s1">, </span><span class="s5">0.01</span><span class="s1">, </span><span class="s5">0.1</span><span class="s1">, </span><span class="s5">1</span><span class="s1">],</span>
+              <span class="s3">'max_iter'</span><span class="s1">: [</span><span class="s5">1000</span><span class="s1">, </span><span class="s5">2000</span><span class="s1">, </span><span class="s5">5000</span><span class="s1">]}</span>
+<span class="s1">print(param_grid)</span>
+
+<span class="s2"># Cross-validation</span>
+<span class="s1">kf = KFold(n_splits=</span><span class="s5">5</span><span class="s1">, shuffle=</span><span class="s0">True</span><span class="s1">, random_state=</span><span class="s5">42</span><span class="s1">)</span>
+
+<span class="s2"># Iteration over all combinations of parameters</span>
+<span class="s1">best_score = -np.inf</span>
+<span class="s1">best_params = </span><span class="s0">None</span>
+
+<span class="s0">for </span><span class="s1">lambda_param </span><span class="s0">in </span><span class="s1">param_grid[</span><span class="s3">'lambda_param'</span><span class="s1">]:</span>
+    <span class="s0">for </span><span class="s1">max_iter </span><span class="s0">in </span><span class="s1">param_grid[</span><span class="s3">'max_iter'</span><span class="s1">]:</span>
+
+        <span class="s2"># Initialising model with different parameters</span>
+        <span class="s1">pegasos_svm = PegasosSVM(lambda_param=lambda_param, max_iter=max_iter)</span>
+
+        <span class="s2"># Cross-validation</span>
+        <span class="s1">scores = cross_val_score(pegasos_svm, X_train, y_train, cv=kf)</span>
+        <span class="s1">mean_score = np.mean(scores)</span>
+        <span class="s1">print(</span><span class="s3">'Accuracy with lambda ('</span><span class="s1">, lambda_param, </span><span class="s3">') and max_iter ('</span><span class="s1">, max_iter, </span><span class="s3">') is '</span><span class="s1">,mean_score)</span>
+
+        <span class="s2"># Updating best scores and parameters</span>
+        <span class="s0">if </span><span class="s1">mean_score &gt; best_score:</span>
+            <span class="s1">best_score = mean_score</span>
+            <span class="s1">best_params = {</span><span class="s3">'lambda_param'</span><span class="s1">: lambda_param, </span><span class="s3">'max_iter'</span><span class="s1">: max_iter}</span>
+
+
+<span class="s2"># Printing best Parameters and Accuracy</span>
+<span class="s1">print(</span><span class="s3">f'Best Parameters: </span><span class="s4">{</span><span class="s1">best_params</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+<span class="s1">print(</span><span class="s3">f'Best Cross-Validation Accuracy: </span><span class="s4">{</span><span class="s1">best_score</span><span class="s4">:</span><span class="s3">.2f</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+
+<span class="s2"># Training model with best parameters</span>
+<span class="s1">best_model = PegasosSVM(**best_params)</span>
+<span class="s1">best_model.fit(X_train, y_train)</span>
+
+<span class="s2"># Predicting labels of test set</span>
+<span class="s1">y_pred = best_model.predict(X_test)</span>
+
+<span class="s2"># Computing and printing accuracy on test set</span>
+<span class="s1">accuracy = np.mean(y_test == y_pred)</span>
+<span class="s1">loss = np.mean( y_test != y_pred)</span>
+<span class="s1">print(</span><span class="s3">f'Accuracy on test set: </span><span class="s4">{</span><span class="s1">accuracy</span><span class="s4">:</span><span class="s3">.2f</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+<span class="s1">print(</span><span class="s3">f'Misclassification rate on test set: </span><span class="s4">{</span><span class="s1">loss</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+
+
+
+
+
+
+<span class="s2">######## LOGISTIC REGRESSION w/PEGASOS UPDATES (LOGISTIC LOSS)</span>
+
+<span class="s1">print(</span><span class="s3">'</span><span class="s4">\n</span><span class="s3">Running Regularised Logistic Regression with different values of parameters </span><span class="s4">\n</span><span class="s3">Grid search with 5-fold cross validation:'</span><span class="s1">)</span>
+
+<span class="s2"># Different combinations of parameters to test</span>
+<span class="s1">param_grid = {</span><span class="s3">'lambda_param'</span><span class="s1">: [</span><span class="s5">0.001</span><span class="s1">, </span><span class="s5">0.01</span><span class="s1">, </span><span class="s5">0.1</span><span class="s1">, </span><span class="s5">1</span><span class="s1">],</span>
+              <span class="s3">'max_iter'</span><span class="s1">: [</span><span class="s5">1000</span><span class="s1">, </span><span class="s5">2000</span><span class="s1">, </span><span class="s5">5000</span><span class="s1">]}</span>
+
+<span class="s1">print(param_grid)</span>
+
+<span class="s2"># Cross-validation</span>
+<span class="s1">kf = KFold(n_splits=</span><span class="s5">5</span><span class="s1">, shuffle=</span><span class="s0">True</span><span class="s1">, random_state=</span><span class="s5">42</span><span class="s1">)</span>
+
+<span class="s2"># Iterating over all combinations of parameters</span>
+<span class="s1">best_score = -np.inf</span>
+<span class="s1">best_params = </span><span class="s0">None</span>
+
+<span class="s0">for </span><span class="s1">lambda_param </span><span class="s0">in </span><span class="s1">param_grid[</span><span class="s3">'lambda_param'</span><span class="s1">]:</span>
+    <span class="s0">for </span><span class="s1">max_iter </span><span class="s0">in </span><span class="s1">param_grid[</span><span class="s3">'max_iter'</span><span class="s1">]:</span>
+
+        <span class="s2"># Initialising model with different parameters</span>
+        <span class="s1">logistic_model = PegasosLogisticRegression(lambda_param=lambda_param, max_iter=max_iter)</span>
+
+        <span class="s2"># Cross-validation</span>
+        <span class="s1">scores = cross_val_score(logistic_model, X_train, y_train, cv=kf)</span>
+        <span class="s1">mean_score = np.mean(scores)</span>
+        <span class="s1">print(</span><span class="s3">'Accuracy with lambda ('</span><span class="s1">, lambda_param, </span><span class="s3">') and max_iter ('</span><span class="s1">, max_iter, </span><span class="s3">') is '</span><span class="s1">, mean_score)</span>
+
+        <span class="s2"># Updating best score and parameters, if necessary</span>
+        <span class="s0">if </span><span class="s1">mean_score &gt; best_score:</span>
+            <span class="s1">best_score = mean_score</span>
+            <span class="s1">best_params = {</span><span class="s3">'lambda_param'</span><span class="s1">: lambda_param, </span><span class="s3">'max_iter'</span><span class="s1">: max_iter}</span>
+
+
+<span class="s2"># Printing best Parameters and Accuracy.</span>
+<span class="s1">print(</span><span class="s3">f'Best Parameters: </span><span class="s4">{</span><span class="s1">best_params</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+<span class="s1">print(</span><span class="s3">f'Best Cross-Validation Accuracy: </span><span class="s4">{</span><span class="s1">best_score</span><span class="s4">:</span><span class="s3">.2f</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+
+<span class="s2"># Training model with best parameters</span>
+<span class="s1">best_model = PegasosLogisticRegression(**best_params)</span>
+<span class="s1">best_model.fit(X_train, y_train)</span>
+
+<span class="s2"># Predicting labels of test set</span>
+<span class="s1">y_pred = best_model.predict(X_test)</span>
+
+<span class="s2"># Computing and printing accuracy on test set</span>
+<span class="s1">accuracy = np.mean(y_test == y_pred)</span>
+<span class="s1">loss = np.mean( y_test != y_pred)</span>
+<span class="s1">print(</span><span class="s3">f'Accuracy on test set: </span><span class="s4">{</span><span class="s1">accuracy</span><span class="s4">:</span><span class="s3">.2f</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+<span class="s1">print(</span><span class="s3">f'Misclassification rate on test set: </span><span class="s4">{</span><span class="s1">loss</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+
+
+
+<span class="s2">#### POLYNOMIAL FEATURE EXPANSION OF DEGREE 2</span>
+
+<span class="s1">print(</span><span class="s3">'</span><span class="s4">\n\n</span><span class="s3">Applying polynomial feature expansion of degree 2'</span><span class="s1">)</span>
+
+<span class="s2"># Creating new test and training set</span>
+<span class="s1">X_train_poly = polynomial_feature_expansion(X_train)</span>
+<span class="s1">X_test_poly = polynomial_feature_expansion(X_test)</span>
+
+<span class="s1">print(</span><span class="s3">&quot;</span><span class="s4">\n</span><span class="s3">Shape of original features:&quot;</span><span class="s1">, X_train.shape)</span>
+<span class="s1">print(</span><span class="s3">&quot;Shape of features after polynomial expansion:&quot;</span><span class="s1">, X_train_poly.shape)</span>
+
+
+<span class="s2"># Generating features names</span>
+<span class="s1">feature_names = [</span><span class="s3">'x' </span><span class="s1">+ str(i + </span><span class="s5">1</span><span class="s1">) </span><span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(X_train.shape[</span><span class="s5">1</span><span class="s1">])]</span>
+<span class="s1">poly_feature_names = feature_names[:]</span>
+
+<span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(len(feature_names)):</span>
+    <span class="s0">for </span><span class="s1">j </span><span class="s0">in </span><span class="s1">range(i, len(feature_names)):</span>
+        <span class="s1">poly_feature_names.append(feature_names[i] + </span><span class="s3">'*' </span><span class="s1">+ feature_names[j])</span>
+
+<span class="s1">print(</span><span class="s3">f'New list of features: </span><span class="s4">{</span><span class="s1">poly_feature_names</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+
+
+<span class="s2">### Initializing models and parameters</span>
+
+<span class="s2"># Perceptron</span>
+<span class="s1">perceptron_model = Perceptron(max_epochs=</span><span class="s5">1000</span><span class="s1">)</span>
+<span class="s1">perceptron_max_iter_grid = [</span><span class="s5">1000</span><span class="s1">, </span><span class="s5">2000</span><span class="s1">, </span><span class="s5">5000</span><span class="s1">]</span>
+
+<span class="s2"># SVM with Pegasos</span>
+<span class="s1">svm_model = PegasosSVM(lambda_param=</span><span class="s5">0.01</span><span class="s1">, max_iter=</span><span class="s5">1000</span><span class="s1">)</span>
+<span class="s1">svm_params = {</span><span class="s3">'lambda_param'</span><span class="s1">: [</span><span class="s5">0.001</span><span class="s1">, </span><span class="s5">0.01</span><span class="s1">, </span><span class="s5">0.1</span><span class="s1">], </span><span class="s3">'max_iter'</span><span class="s1">: [</span><span class="s5">1000</span><span class="s1">, </span><span class="s5">2000</span><span class="s1">, </span><span class="s5">5000</span><span class="s1">]}</span>
+
+<span class="s2"># Regularized Logistic Regression with Pegasos</span>
+<span class="s1">logistic_model = PegasosLogisticRegression(lambda_param=</span><span class="s5">0.01</span><span class="s1">, max_iter=</span><span class="s5">1000</span><span class="s1">)</span>
+<span class="s1">logistic_params = {</span><span class="s3">'lambda_param'</span><span class="s1">: [</span><span class="s5">0.001</span><span class="s1">, </span><span class="s5">0.01</span><span class="s1">, </span><span class="s5">0.1</span><span class="s1">], </span><span class="s3">'max_iter'</span><span class="s1">: [</span><span class="s5">1000</span><span class="s1">, </span><span class="s5">2000</span><span class="s1">, </span><span class="s5">5000</span><span class="s1">]}</span>
+
+<span class="s2">### Hyperparameter tuning for each model</span>
+
+<span class="s2"># Perceptron</span>
+<span class="s1">print(</span><span class="s3">'</span><span class="s4">\n</span><span class="s3">Running Perceptron'</span><span class="s1">)</span>
+<span class="s1">best_params_perceptron = cross_val_model_perceptron(perceptron_model, perceptron_max_iter_grid, X_train, y_train, X_train_poly)</span>
+<span class="s2"># Retrain model with best parameters</span>
+<span class="s1">perceptron_model.set_params(**best_params_perceptron)</span>
+<span class="s1">perceptron_model.fit(X_train_poly, y_train)</span>
+
+<span class="s2"># SVM with Pegasos</span>
+<span class="s1">print(</span><span class="s3">'</span><span class="s4">\n</span><span class="s3">Running SVM'</span><span class="s1">)</span>
+<span class="s1">best_params_svm = cross_val_model(svm_model, svm_params, X_train, y_train, X_train_poly)</span>
+<span class="s2">#Retrain model with best parameters</span>
+<span class="s1">svm_model.set_params(**best_params_svm)</span>
+<span class="s1">svm_model.fit(X_train_poly, y_train)</span>
+
+<span class="s2"># Regularized Logistic Regression with Pegasos</span>
+<span class="s1">print(</span><span class="s3">'</span><span class="s4">\n</span><span class="s3">Running Logistic Regression'</span><span class="s1">)</span>
+<span class="s1">best_params_logistic = cross_val_model(logistic_model, logistic_params, X_train, y_train, X_train_poly)</span>
+<span class="s2"># Retrain model with best parameters</span>
+<span class="s1">logistic_model.set_params(**best_params_logistic)</span>
+<span class="s1">logistic_model.fit(X_train_poly, y_train)</span>
+
+<span class="s2">### Comparing weights before and after polynomial expansion</span>
+
+<span class="s1">print(</span><span class="s3">'</span><span class="s4">\n\n</span><span class="s3">Compare weights before and after polynomial expansion on: </span><span class="s4">\n</span><span class="s3">PERCEPTRON'</span><span class="s1">)</span>
+<span class="s1">compare_weights(perceptron_model, feature_names, poly_feature_names, X_train, X_train_poly, y_train)</span>
+<span class="s1">print(</span><span class="s3">'</span><span class="s4">\n</span><span class="s3">SVM WITH PEGASOS UPDATES'</span><span class="s1">)</span>
+<span class="s1">compare_weights(svm_model, feature_names, poly_feature_names, X_train, X_train_poly, y_train)</span>
+<span class="s1">print(</span><span class="s3">'</span><span class="s4">\n</span><span class="s3">REGULARISED LOGISTIC REGRESSION'</span><span class="s1">)</span>
+<span class="s1">compare_weights(logistic_model, feature_names, poly_feature_names, X_train, X_train_poly, y_train)</span>
+
+<span class="s2">### Final evaluation of models on test set</span>
+
+<span class="s1">print(</span><span class="s3">&quot;</span><span class="s4">\n</span><span class="s3">Evaluation of Perceptron on test set:&quot;</span><span class="s1">)</span>
+<span class="s1">evaluate_model_on_test(perceptron_model, X_train_poly, y_train, X_test_poly, y_test)</span>
+
+<span class="s1">print(</span><span class="s3">&quot;</span><span class="s4">\n</span><span class="s3">Evaluation of SVM with Pegasos on test set:&quot;</span><span class="s1">)</span>
+<span class="s1">evaluate_model_on_test(svm_model, X_train_poly, y_train, X_test_poly, y_test)</span>
+
+<span class="s1">print(</span><span class="s3">&quot;</span><span class="s4">\n</span><span class="s3">Evaluation of Logistic Regression on test set:&quot;</span><span class="s1">)</span>
+<span class="s1">evaluate_model_on_test(logistic_model, X_train_poly, y_train, X_test_poly, y_test)</span>
+
+
+
+
+<span class="s2">#### KERNELISED VERSION OF PERCEPTRON</span>
+
+<span class="s2"># INITIALISING MODELS with polynomial and gaussian kernels</span>
+<span class="s1">kperceptron_gaussian = KernelPerceptron(max_epochs=</span><span class="s5">1000</span><span class="s1">, kernel=gaussian_kernel)</span>
+<span class="s1">param_grid = {</span><span class="s3">'gamma'</span><span class="s1">: [</span><span class="s5">0.01</span><span class="s1">, </span><span class="s5">0.1</span><span class="s1">, </span><span class="s5">1</span><span class="s1">], </span><span class="s3">'max_epochs'</span><span class="s1">: [</span><span class="s5">1000</span><span class="s1">]}</span>
+<span class="s1">kperceptron_polynomial = KernelPerceptron(max_epochs=</span><span class="s5">1000</span><span class="s1">, kernel=polynomial_kernel)</span>
+<span class="s1">param_grid_2 = {</span><span class="s3">'degree'</span><span class="s1">: [</span><span class="s5">2</span><span class="s1">, </span><span class="s5">3</span><span class="s1">, </span><span class="s5">4</span><span class="s1">], </span><span class="s3">'max_epochs'</span><span class="s1">: [</span><span class="s5">1000</span><span class="s1">]}</span>
+
+
+<span class="s1">print(</span><span class="s3">'Running Kernelised Perceptron with gaussian kernel: '</span><span class="s1">)</span>
+<span class="s2"># CV and grid-search on Gaussian model</span>
+<span class="s1">best_params_kpg = cross_val_model_kernel(kperceptron_gaussian, param_grid, X_train, y_train, kernel_type=</span><span class="s3">'gaussian'</span><span class="s1">)</span>
+<span class="s1">kperceptron_gaussian.set_params(**best_params_kpg)</span>
+<span class="s1">kperceptron_gaussian.fit(X_train, y_train)</span>
+
+<span class="s1">print(</span><span class="s3">'Running Kernelised Perceptron with polynomial kernel: '</span><span class="s1">)</span>
+<span class="s2"># CV and grid-search on Polynomial model</span>
+<span class="s1">best_params_kpp = cross_val_model_kernel(kperceptron_polynomial, param_grid_2, X_train, y_train, kernel_type=</span><span class="s3">'polynomial'</span><span class="s1">)</span>
+<span class="s1">kperceptron_polynomial.set_params(**best_params_kpp)</span>
+<span class="s1">kperceptron_polynomial.fit(X_train, y_train)</span>
+
+
+<span class="s2"># Evaluation on test set</span>
+
+<span class="s2"># Predicting labels of test set with POLYONMIAL</span>
+<span class="s1">y_pred = kperceptron_polynomial.predict(X_test)</span>
+<span class="s2"># Computing and printing accuracy</span>
+<span class="s1">accuracy = np.mean(y_test == y_pred)</span>
+<span class="s1">print(</span><span class="s3">f'Accuracy on test set (polynomial kernel): </span><span class="s4">{</span><span class="s1">accuracy</span><span class="s4">:</span><span class="s3">.2f</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+
+
+<span class="s2"># Predicting labels of test set with GAUSSIAN</span>
+<span class="s1">y_pred = kperceptron_gaussian.predict(X_test)</span>
+<span class="s2"># Computing and printing accuracy</span>
+<span class="s1">accuracy = np.mean(y_test == y_pred)</span>
+<span class="s1">print(</span><span class="s3">f'Accuracy on test set (gaussian kernel): </span><span class="s4">{</span><span class="s1">accuracy</span><span class="s4">:</span><span class="s3">.2f</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+
+
+
+<span class="s2">#### KERNELISED VERSION OF PEGASOS FOR SVM</span>
+
+<span class="s2"># Definizione del Kernel Pegasos SVM con kernel gaussiano e polinomiale</span>
+<span class="s1">kpegasos_gaussian = KernelPegasosSVM(max_iter=</span><span class="s5">1000</span><span class="s1">, kernel=gaussian_kernel)</span>
+<span class="s1">param_grid_gaussian = {</span><span class="s3">'gamma'</span><span class="s1">: [</span><span class="s5">0.01</span><span class="s1">, </span><span class="s5">0.1</span><span class="s1">, </span><span class="s5">1</span><span class="s1">], </span><span class="s3">'lambda_param'</span><span class="s1">: [</span><span class="s5">0.001</span><span class="s1">, </span><span class="s5">0.01</span><span class="s1">, </span><span class="s5">0.1</span><span class="s1">]}</span>
+
+<span class="s1">kpegasos_polynomial = KernelPegasosSVM(max_iter=</span><span class="s5">1000</span><span class="s1">, kernel=polynomial_kernel)</span>
+<span class="s1">param_grid_polynomial = {</span><span class="s3">'degree'</span><span class="s1">: [</span><span class="s5">2</span><span class="s1">, </span><span class="s5">3</span><span class="s1">, </span><span class="s5">4</span><span class="s1">], </span><span class="s3">'lambda_param'</span><span class="s1">: [</span><span class="s5">0.001</span><span class="s1">, </span><span class="s5">0.01</span><span class="s1">, </span><span class="s5">0.1</span><span class="s1">]}</span>
+
+<span class="s2"># Funzione per cross-validation e grid search per il kernel gaussiano</span>
+<span class="s1">print(</span><span class="s3">'Running Kernelised Pegasos SVM with gaussian kernel: '</span><span class="s1">)</span>
+<span class="s1">best_params_kpg = cross_val_model_kernelSVM(kpegasos_gaussian, param_grid_gaussian, X_train, y_train, kernel_type=</span><span class="s3">'gaussian'</span><span class="s1">)</span>
+<span class="s1">kpegasos_gaussian.set_params(**best_params_kpg)</span>
+<span class="s1">kpegasos_gaussian.fit(X_train, y_train)</span>
+
+<span class="s2"># Funzione per cross-validation e grid search per il kernel polinomiale</span>
+<span class="s1">print(</span><span class="s3">'Running Kernelised Pegasos SVM with polynomial kernel: '</span><span class="s1">)</span>
+<span class="s1">best_params_kpp = cross_val_model_kernelSVM(kpegasos_polynomial, param_grid_polynomial, X_train, y_train, kernel_type=</span><span class="s3">'polynomial'</span><span class="s1">)</span>
+<span class="s1">kpegasos_polynomial.set_params(**best_params_kpp)</span>
+<span class="s1">kpegasos_polynomial.fit(X_train, y_train)</span>
+
+
+<span class="s2"># Evaluation on test set</span>
+
+<span class="s2"># Predicting labels of test set with POLYOMIAL</span>
+<span class="s1">y_pred = kpegasos_polynomial.predict(X_test)</span>
+<span class="s2"># Computing and printing accuracy</span>
+<span class="s1">accuracy = np.mean(y_test == y_pred)</span>
+<span class="s1">print(</span><span class="s3">f'Accuracy on test set (polynomial kernel): </span><span class="s4">{</span><span class="s1">accuracy</span><span class="s4">:</span><span class="s3">.2f</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span>
+
+
+<span class="s2"># Predicting labels of test set with GAUSSIAN</span>
+<span class="s1">y_pred = kpegasos_gaussian.predict(X_test)</span>
+<span class="s2"># Computing and printing accuracy</span>
+<span class="s1">accuracy = np.mean(y_test == y_pred)</span>
+<span class="s1">print(</span><span class="s3">f'Accuracy on test set (gaussian kernel): </span><span class="s4">{</span><span class="s1">accuracy</span><span class="s4">:</span><span class="s3">.2f</span><span class="s4">}</span><span class="s3">'</span><span class="s1">)</span></pre>
+</body>
+</html>
