@@ -517,6 +517,7 @@ def cross_val_model_kernel(model, param_grid, X_train, y_train, kernel_type='gau
     for max_epochs in param_grid['max_epochs']:
         if kernel_type == 'gaussian':
             for gamma in param_grid['gamma']:
+                model.reset()
                 model.set_params(max_epochs=max_epochs, gamma=gamma)
                 scores = cross_val_score(model, X_train, y_train, folds)
                 mean_score = np.mean(scores)
@@ -527,6 +528,7 @@ def cross_val_model_kernel(model, param_grid, X_train, y_train, kernel_type='gau
 
         elif kernel_type == 'polynomial':
             for degree in param_grid['degree']:
+                model.reset()
                 model.set_params(max_epochs=max_epochs, degree=degree)
                 scores = cross_val_score(model, X_train, y_train, folds)
                 mean_score = np.mean(scores)
@@ -552,32 +554,31 @@ def cross_val_model_kernelSVM(model, param_grid, X_train, y_train, kernel_type='
     if kernel_type == 'gaussian':
         for gamma in param_grid['gamma']:
             for lambda_param in param_grid['lambda_param']:
+                model.reset()
                 model.set_params(lambda_param=lambda_param, gamma=gamma)
                 scores = cross_val_score(model, X_train, y_train, folds)
                 mean_score = np.mean(scores)
-                print('Accuracy with lambda (', lambda_param, ') and gamma (', gamma, ') is', mean_score)
+                print(f'Accuracy with lambda ({lambda_param}) and gamma ({gamma}) is {mean_score}')
                 if mean_score > best_score:
                     best_score = mean_score
                     best_params = {'gamma': gamma, 'lambda_param': lambda_param}
-                model.reset()
-
 
     elif kernel_type == 'polynomial':
         for degree in param_grid['degree']:
             for lambda_param in param_grid['lambda_param']:
-                    model.set_params(degree=degree, lambda_param=lambda_param)
-                    scores = cross_val_score(model, X_train, y_train, folds)
-                    mean_score = np.mean(scores)
-                    print('Accuracy with lambda (', lambda_param, ') and degree (', degree, ') is', mean_score)
-                    if mean_score > best_score:
-                        best_score = mean_score
-                        best_params = {'degree': degree, 'lambda_param': lambda_param}
+                model.reset()  
+                model.set_params(degree=degree, lambda_param=lambda_param)
+                scores = cross_val_score(model, X_train, y_train, folds)
+                mean_score = np.mean(scores)
+                print(f'Accuracy with lambda ({lambda_param}) and degree ({degree}) is {mean_score}')
+                if mean_score > best_score:
+                    best_score = mean_score
+                    best_params = {'degree': degree, 'lambda_param': lambda_param}
 
     print(f'Best Parameters for Pegasos SVM ({kernel_type} kernel): {best_params}')
     print(f'Best Cross-Validation Accuracy for Pegasos SVM: {best_score:.4f}')
 
     return best_params
-
 
 
 
